@@ -161,3 +161,21 @@ func (c Cursor) Go(buf []byte, to image.Point) ([]byte, Cursor) {
 	c.Position = to
 	return buf, c
 }
+
+// TODO: func (c Cursor) Write(buf, p []byte) ([]byte, Cursor)
+
+// WriteString appends the given string's UTF8 bytes into the given
+// buffer, invalidating the cursor if the string COULD HAVE rendered
+// to more than one glyph; otherwise the cursor's X is advanced by 1.
+func (c Cursor) WriteString(buf []byte, s string) ([]byte, Cursor) {
+	buf = append(buf, s...)
+	if n := len(s); n > 1 {
+		// Invalidate cursor column to force position reset
+		// before next draw, if the string drawn might be longer
+		// than one cell wide.
+		c.Position.X = -1
+	} else if n == 1 {
+		c.Position.X++
+	}
+	return buf, c
+}

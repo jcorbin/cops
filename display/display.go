@@ -140,17 +140,7 @@ func Render(buf []byte, cur cursor.Cursor, over, under *Display, model vtcolor.M
 				buf = model.RenderBackgroundColor(buf, ob)
 				cur.Background = rgba(ob)
 			}
-			buf = append(buf, ot...)
-
-			if len(ot) == 1 {
-				cur.Position.X++
-			} else if len(ot) > 1 {
-				// Invalidate cursor column to force position reset
-				// before next draw, if the string drawn might be longer
-				// than one cell wide.
-				cur.Position.X = -1
-			}
-
+			buf, cur = cur.WriteString(buf, ot)
 		}
 	}
 	buf, cur = cur.Reset(buf)
