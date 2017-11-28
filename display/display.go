@@ -130,21 +130,38 @@ func Render(buf []byte, cur cursor.Cursor, over, under *Display, model vtcolor.M
 			if len(ot) == 0 || ot == ut && of == uf && ob == ub {
 				continue
 			}
-
 			buf, cur = cur.Go(buf, image.Pt(x, y))
-			if of != cur.Foreground {
-				buf = model.RenderForegroundColor(buf, of)
-				cur.Foreground = rgba(of)
-			}
-			if ob != cur.Background {
-				buf = model.RenderBackgroundColor(buf, ob)
-				cur.Background = rgba(ob)
-			}
+			buf, cur = renderColors(model, buf, cur, of, ob)
 			buf, cur = cur.WriteString(buf, ot)
 		}
 	}
 	buf, cur = cur.Reset(buf)
 	return buf, cur
+}
+
+// TODO: suspect we'd be better off by pushing this down fully into
+// (each?) model:
+//     type RenderableModel interface {
+//         Model
+//         Render(buf []byte, cur Cursor, fg, bg color.Color) ([]byte, Cursor)
+//     }
+//
+// e.g.
+//     buf, cur = model.RenderTo(buf, cur, fg, bg)
+func renderColors(
+	model vtcolor.Model,
+	buf []byte, c Cursor,
+	fg, bg color.Color,
+) ([]byte, Cursor) {
+	if fg != c.Foreground {
+		buf = model.RenderForegroundColor(buf, fg)
+		c.Foreground = rgba(fg)
+	}
+	if bg != c.Background {
+		buf = model.RenderBackgroundColor(buf, bg)
+		c.Background = rgba(bg)
+	}
+	return buf, c
 }
 
 func rgba(c color.Color) color.RGBA {
