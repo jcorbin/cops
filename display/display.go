@@ -119,22 +119,42 @@ func (d *Display) Bounds() image.Rectangle {
 // display to look like the front model, skipping cells that are the same in
 // the back model, using escape sequences and the nearest matching colors in
 // the given color model.
+//
+// TODO: I wish this were
+// -     func (*Display) Render(buf []byte, cur cursor.Cursor, ...)
+// - and func (*Display) RenderOver(prior *Display, buf []byte, cur cursor.Cursor, ...)
+//
+// where `...` is:
+// -    `filter func(x, y int) bool, model vtcolor.Model`
+// - or `each func(x, y int) (t string, fg, bg color.Color, skip bool)`
 func Render(buf []byte, cur cursor.Cursor, over, under *Display, model vtcolor.Model) ([]byte, cursor.Cursor) {
-	for y := over.Rect.Min.Y; y < over.Rect.Max.Y; y++ {
-		for x := over.Rect.Min.X; x < over.Rect.Max.X; x++ {
-			ot, of, ob := over.At(x, y)
-			ut, uf, ub := under.At(x, y)
-
-			// nop if empty text or previous generation of the display
-			// was already correct.
-			if len(ot) == 0 || ot == ut && of == uf && ob == ub {
-				continue
+	if under == nil {
+		for y := over.Rect.Min.Y; y < over.Rect.Max.Y; y++ {
+			for x := over.Rect.Min.X; x < over.Rect.Max.X; x++ {
+				ot, of, ob := over.At(x, y)
+				if len(ot) == 0 {
+					continue
+				}
+				buf, cur = cur.Go(buf, image.Pt(x, y))
+				buf, cur = renderColors(model, buf, cur, of, ob)
+				buf, cur = cur.WriteString(buf, ot)
 			}
-			buf, cur = cur.Go(buf, image.Pt(x, y))
-			buf, cur = renderColors(model, buf, cur, of, ob)
-			buf, cur = cur.WriteString(buf, ot)
+		}
+	} else {
+		for y := over.Rect.Min.Y; y < over.Rect.Max.Y; y++ {
+			for x := over.Rect.Min.X; x < over.Rect.Max.X; x++ {
+				ot, of, ob := over.At(x, y)
+				ut, uf, ub := under.At(x, y)
+				if len(ot) == 0 || (ot == ut && of == uf && ob == ub) {
+					continue
+				}
+				buf, cur = cur.Go(buf, image.Pt(x, y))
+				buf, cur = renderColors(model, buf, cur, of, ob)
+				buf, cur = cur.WriteString(buf, ot)
+			}
 		}
 	}
+
 	buf, cur = cur.Reset(buf)
 	return buf, cur
 }
