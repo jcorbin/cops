@@ -7,6 +7,7 @@ import (
 	"image"
 	"image/color"
 	"strconv"
+	"unicode/utf8"
 
 	"github.com/kriskowal/cops/vtcolor"
 )
@@ -169,7 +170,7 @@ func (c Cursor) Go(buf []byte, to image.Point) ([]byte, Cursor) {
 // to more than one glyph; otherwise the cursor's X is advanced by 1.
 func (c Cursor) WriteString(buf []byte, s string) ([]byte, Cursor) {
 	buf = append(buf, s...)
-	if n := len(s); n > 1 {
+	if n := utf8.RuneCountInString(s); n > 1 {
 		// Invalidate cursor column to force position reset
 		// before next draw, if the string drawn might be longer
 		// than one cell wide.
